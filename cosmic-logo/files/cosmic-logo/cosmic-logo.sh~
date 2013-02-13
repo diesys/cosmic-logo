@@ -1,0 +1,120 @@
+#!/bin/sh
+
+HELP="\n\t
+-a --add:\tadds an image to the theme's sources\n\t\t
+usage:\n\t\t\tcosmic-logo --add image.png background\n\t\t\tcosmic-logo --add image.png logo\n\n\t
+-c --current:\tshows the current theme combination\n\t
+-h --help:\tshows this message\n\t
+-i --init:\tupdates the initramfs\n\t
+-l --list:\tlists backgrounds, logos, and the other components\n\t
+-L --license:\tshows the LICENSE\n\t
+-p --preview:\tshows a preview\n\t
+-r --remove:\tremoves an image frome the user's sources (same usage of --add)\n\t
+-R --readme:\rshows the README file\n\t
+-s --set-conf:\tsave the current configuration\n\t
+-u --update:\tto change the current combination\n\t\t
+usage: cosmic-logo --update background logo logo-version spot\n\n\t
+--Uninstall:\tto uninstall the theme pack\n\n
+see the README for more\n"
+
+sources_folder=/usr/share/plymouth/themes/cosmic-logo/sources
+theme_folder=/usr/share/plymouth/themes/cosmic-logo
+current_theme=/usr/share/plymouth/themes/cosmic-logo/current
+BACKGROUND=$(cat $current_theme | grep "background" | sed -e 's/background= //');
+LOGO=$(cat $current_theme | grep "logo" | sed -e 's/logo= //');
+VERSION=$(cat $current_theme | grep "version" | sed -e 's/version= //');
+SPOT=$(cat $current_theme | grep "spot" | sed -e 's/spot= //');
+screenX=$(xrandr -q | grep -w current | cut -d " " -f 8);
+screenY=$(xrandr -q | grep -w current | cut -d " " -f 10 | cut -d "," -f 1);
+		
+case "$1" in
+
+	-a|--add)
+		case "$3" in
+			background)
+			  cp $2 $sources_folder/background/$2;;
+			logo)
+			  cp $2 $sources_folder/logo/user/$2;;
+		esac;;
+		
+	-c|--current)
+		echo "";
+		cat $current_theme;
+		echo "";;
+
+	-h|--help)
+		echo $HELP;;
+
+	-i|--init)
+		update-initramfs -u;;
+
+	-l|--list)
+		echo "\n==========| BACKGROUNDS |==========";
+		ls -1 $sources_folder/background/ | sed -e 's/\.[a-zA-Z]*$//';
+		echo "\n=============| LOGOS |=============";
+		ls -1 $sources_folder/logo/ | sed -e 's/user//';
+		echo "user's logos:";
+		ls -1 $sources_folder/logo/user | sed -e 's/\.[a-zA-Z]*$//';
+		echo "\n===| LOGO VERSIONS (no user's) |===\noriginal\ndarkgrey\nlightgrey\n*_emboss";
+		echo "\n=========| SPOTS COLOURS |=========";
+		ls -1 $sources_folder/spot/ | sed -e 's/\.[a-zA-Z]*$//'
+		echo "";;
+
+	-p|--preview)
+		plymouth-set-default-theme cosmic-logo;
+		plymouthd;
+		plymouth --show-splash;
+		sleep 10s;
+		plymouth quit;;
+	
+	-r|--remove)
+		case "$3" in
+			background)
+			  rm $sources_folder/background/$2.png;;
+			logo)
+			  rm $sources_folder/logo/user/$2.png;;
+		esac;;
+		
+	-s|--set-conf)
+		plymouth-set-default-theme cosmic-logo;
+		if [ $2 <> " " ]
+		  then
+			echo "background= $BACKGROUND\nlogo= $LOGO\nversion= $VERSION\nspot= $SPOT\n" > $current_theme;
+		fi;;
+
+	-u|--update)
+
+		if [ "$2" = " " ]
+		  then
+			echo "\nUnable to find all sources! Usage: ./cosmic-logo -u BACKGROUND LOGO-FAMILY LOGO-VERSION SPOT-COLOUR\nor see --help for details.\n"
+		  fi;
+		set -x
+		if [ "$2" != "-" ]
+		  then
+			cp $sources_folder/background/"$2".png /usr/share/plymouth/themes/cosmic-logo/background.png;
+			BACKGROUND=$2;
+			fi;
+		if [ "$3" != "-" ]
+		  then
+			cp $sources_folder/logo/$3/$4.png /usr/share/plymouth/themes/cosmic-logo/logo.png;
+			LOGO="$3";
+		  fi;
+		if [ "$4" != "-" ]
+		  then
+			VERSION="$4";
+		  fi;
+		if [ "$5" != "-" ]
+		  then
+			cp $sources_folder/spot/"$5".png /usr/share/plymouth/themes/cosmic-logo/spot0.png;
+			SPOT="$5";
+		  fi;
+		echo "background= $BACKGROUND\nlogo= $LOGO\nversion= $VERSION\nspot= $SPOT\n" > $current_theme;;
+
+	--Uninstall)
+		rm -r /usr/share/plymouth/themes/cosmic-logo/;
+		rm /usr/bin/cosmic-logo;;
+
+	*)
+		echo "\nSorry, unknown option, try --help";;
+
+esac

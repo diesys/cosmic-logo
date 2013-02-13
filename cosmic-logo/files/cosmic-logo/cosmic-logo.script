@@ -1,0 +1,198 @@
+num=7;
+
+for (i=0; i<num; i++){
+  spec[i].image = Image("spot" + (i % 1) + ".png");
+  spec[i].sprite = Sprite(spec[i].image);
+  spec[i].sprite.SetOpacity (0.0);
+  }
+
+logo.image = Image("logo.png");
+
+#logo.sprite = Sprite(scaled_logo);
+
+if (logo_ratio > adapt_logo_ratio)
+  {  # Screen ratio is taller than image ratio, we will match the screen/5 height
+     logo_scale_factor =  Window.GetHeight() / bg_image.GetHeight();
+  }
+else
+  {  # Screen ratio is wider than image ratio, we will match the screen/5 width
+     logo_scale_factor =  Window.GetWidth() / bg_image.GetWidth();
+  }
+
+logo.sprite.SetX ((Window.GetWidth()  / 2 - logo.image.GetWidth()  / 2));
+logo.sprite.SetY ((Window.GetHeight() / 2 - logo.image.GetHeight() / 2));
+logo.sprite.SetOpacity (0.0);
+logo.sprite.SetZ (10000);
+progress = 0.0;
+
+
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX ((Window.GetWidth()  / 2 - logo.image.GetWidth()  / 2));
+logo.sprite.SetY ((Window.GetHeight() / 2 - logo.image.GetHeight() / 2));
+logo.sprite.SetOpacity (0.0);
+logo.sprite.SetZ (10000);
+progress = 0.0;
+
+# Background Image
+bg_image = Image("background.png");
+
+screen_ratio = Window.GetHeight() / Window.GetWidth();
+bg_image_ratio = bg_image.GetHeight() / bg_image.GetWidth();
+
+if (screen_ratio > bg_image_ratio)
+  {  # Screen ratio is taller than image ratio, we will match the screen height
+     scale_factor =  Window.GetHeight() / bg_image.GetHeight();
+  }
+else
+  {  # Screen ratio is wider than image ratio, we will match the screen width
+     scale_factor =  Window.GetWidth() / bg_image.GetWidth();
+  }
+
+scaled_bg_image = bg_image.Scale(bg_image.GetWidth()  * scale_factor,
+                                         bg_image.GetHeight() * scale_factor);
+bg_sprite = Sprite(scaled_bg_image); # Create the a sprite using the scaled image
+
+bg_sprite.SetX(Window.GetWidth()  / 2 - scaled_bg_image.GetWidth () / 2); # Place in the centre
+bg_sprite.SetY(Window.GetHeight() / 2 - scaled_bg_image.GetHeight() / 2);
+bg_sprite.SetZ(-10000); # Place right at the back
+
+
+
+fun refresh (){
+  inc = progress;
+  
+  logo.sprite.SetOpacity (MathClamp((inc-0.7)/0.2, 0, 1));
+  
+  if (inc<0.8){
+    for (i=0; i<num; i++){
+      spec[i].sprite.SetX (Window.GetWidth()  / 2 - spec[i].image.GetWidth()  / 2 + Math.Sin(i*i+(inc*100+i*17)/10) * (0.8-inc)*Window.GetWidth()*0.3);
+      spec[i].sprite.SetY (Window.GetHeight() / 2 - spec[i].image.GetHeight() / 2 + Math.Cos(i*i+(inc*100+i*5)/7) * (0.8-inc)*Window.GetHeight()*0.3);
+      spec[i].sprite.SetZ (0);
+      spec[i].sprite.SetOpacity (inc/0.8);
+      }
+    }
+  else {
+    for (i=0; i<num; i++)
+      spec[i].sprite.SetOpacity (Math.Clamp((0.9-inc)/0.1, 0, 1));
+    }
+  
+  }
+
+
+Plymouth.SetRefreshFunction (refresh);
+
+#----------------------------------------- Dialogue --------------------------------
+
+status = "normal";
+
+fun dialog_setup()
+  {
+    local.box;
+    local.lock;
+    local.entry;
+    
+    box.image = Image("box.png");
+    lock.image = Image("lock.png");
+    entry.image = Image("entry.png");
+    
+    box.sprite = Sprite(box.image);
+    box.x = Window.GetWidth()  / 2 - box.image.GetWidth ()/2;
+    box.y = Window.GetHeight() / 2 - box.image.GetHeight()/2;
+    box.z = 10000;
+    box.sprite.SetPosition(box.x, box.y, box.z);
+    
+    lock.sprite = Sprite(lock.image);
+    lock.x = box.x + box.image.GetWidth()/2 - (lock.image.GetWidth() + entry.image.GetWidth()) / 2;
+    lock.y = box.y + box.image.GetHeight()/2 - lock.image.GetHeight()/2;
+    lock.z = box.z + 1;
+    lock.sprite.SetPosition(lock.x, lock.y, lock.z);
+    
+    entry.sprite = Sprite(entry.image);
+    entry.x = lock.x + lock.image.GetWidth();
+    entry.y = box.y + box.image.GetHeight()/2 - entry.image.GetHeight()/2;
+    entry.z = box.z + 1;
+    entry.sprite.SetPosition(entry.x, entry.y, entry.z);
+    
+    global.dialog.box = box;
+    global.dialog.lock = lock;
+    global.dialog.entry = entry;
+    global.dialog.bullet_image = Image("bullet.png");
+    dialog_opacity (1);
+  }
+    
+fun dialog_opacity(opacity)
+  {
+    dialog.box.sprite.SetOpacity (opacity);
+    dialog.lock.sprite.SetOpacity (opacity);
+    dialog.entry.sprite.SetOpacity (opacity);
+    for (index = 0; dialog.bullet[index]; index++)
+      {
+        dialog.bullet[index].sprite.SetOpacity(opacity);
+      }
+  }
+
+fun display_normal_callback ()
+  {
+    global.status = "normal";
+    if (global.dialog)
+      dialog_opacity (0);
+  }
+
+fun display_password_callback (prompt, bullets)
+  {
+    global.status = "password";
+    if (!global.dialog)
+	dialog_setup();
+    else
+	dialog_opacity(1);
+    for (index = 0; dialog.bullet[index] || index < bullets; index++)
+      {
+        if (!dialog.bullet[index])
+          {
+            dialog.bullet[index].sprite = Sprite(dialog.bullet_image);
+            dialog.bullet[index].x = dialog.entry.x + index * dialog.bullet_image.GetWidth();
+            dialog.bullet[index].y = dialog.entry.y + dialog.entry.image.GetHeight() / 2 - dialog.bullet_image.GetHeight() / 2;
+            dialog.bullet[index].z = dialog.entry.z + 1;
+            dialog.bullet[index].sprite.SetPosition(dialog.bullet[index].x, dialog.bullet[index].y, dialog.bullet[index].z);
+          }
+        if (index < bullets)
+          dialog.bullet[index].sprite.SetOpacity(1);
+        else
+          dialog.bullet[index].sprite.SetOpacity(0);
+      }
+  }
+
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+#----------------------------------------- Progress --------------------------------
+
+fun progress_callback (duration, progress)
+  {
+    progress = (progress * 100) / 15.0;
+    global.progress = progress;
+  }
+
+Plymouth.SetBootProgressFunction(progress_callback);
+
+#----------------------------------------- Quit --------------------------------
+
+fun quit_callback ()
+{
+  logo.sprite.SetOpacity (1);
+}
+
+Plymouth.SetQuitFunction(quit_callback);
+
+#----------------------------------------- Message --------------------------------
+
+message_sprite = Sprite();
+message_sprite.SetPosition(10, 10, 10000);
+
+fun message_callback (text)
+{
+  my_image = Image.Text(text, 1, 1, 1);
+  message_sprite.SetImage(my_image);
+}
+
+Plymouth.SetMessageFunction(message_callback);

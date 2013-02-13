@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=cosmic-logo
+Description=a simple theme with some spots flying on the screen with a custom or some preloaded logos, with some set of backgrounds
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/cosmic-logo
+ScriptFile=/usr/share/plymouth/themes/cosmic-logo/cosmic-logo.script
